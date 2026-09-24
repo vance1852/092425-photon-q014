@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
 
-from .service import PhotonService
+from .service import DEFAULT_AUDIT_PAGE_SIZE, PhotonService
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -23,10 +24,31 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             return self._json(200, {"status": "ok", "service": "photon-fab"})
-        if self.path.startswith("/lots/"):
+        parsed = urlsplit(self.path)
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) == 3 and parts[0] == "lots" and parts[2] == "audit":
             try:
                 token = self.headers.get("Authorization", "").removeprefix("Bearer ")
-                return self._json(200, self.service.get_lot(token, self.path.split("/", 2)[2]))
+                query = parse_qs(parsed.query)
+                cursor_values = query.get("cursor")
+                limit_values = query.get("limit", [str(DEFAULT_AUDIT_PAGE_SIZE)])
+                result = self.service.audit_page(
+                    token,
+                    parts[1],
+                    limit=int(limit_values[0]),
+                    cursor=cursor_values[0] if cursor_values else None,
+                )
+                return self._json(200, result)
+            except KeyError:
+                return self._json(404, {"error": "lot not found"})
+            except PermissionError as exc:
+                return self._json(403, {"error": str(exc)})
+            except (TypeError, ValueError) as exc:
+                return self._json(400, {"error": str(exc)})
+        if parsed.path.startswith("/lots/"):
+            try:
+                token = self.headers.get("Authorization", "").removeprefix("Bearer ")
+                return self._json(200, self.service.get_lot(token, parts[1]))
             except Exception as exc:
                 return self._json(400, {"error": str(exc)})
         return self._json(404, {"error": "not found"})

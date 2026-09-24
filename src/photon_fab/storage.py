@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS measurements(
 CREATE TABLE IF NOT EXISTS lot_events(
  event_id INTEGER PRIMARY KEY AUTOINCREMENT, lot_id TEXT NOT NULL,
  event_type TEXT NOT NULL, actor TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_lot_events_lot ON lot_events(lot_id, event_id);
 CREATE TABLE IF NOT EXISTS approvals(
  lot_id TEXT NOT NULL, reviewer TEXT NOT NULL, decision TEXT NOT NULL,
  reason TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(lot_id,reviewer));
