@@ -64,7 +64,7 @@ PYTHONPATH=src python3 -m photon_fab.acceptance
 PYTHONPATH=src python3 -m photon_fab.api --database photon.sqlite3 --port 8080
 ```
 
-HTTP 健康检查为 `GET /health`，登录、批次、测量和分析请求均支持 JSON；服务不访问外部网络，可在单个 Linux 应用容器中完成验收。
+HTTP 健康检查为 `GET /health`，登录、批次、测量和分析请求均支持 JSON；服务不访问外部网络，可在单个 Linux 应用容器中完成验收。批次审计事件通过 `GET /lots/{lot_id}/audit?cursor=&limit=` 分页导出：事件按 `event_id` 升序，游标绑定批次并携带快照上界，相同游标重复请求返回同一页，导出期间新增的事件不会串入本次导出，跨页不重复也不遗漏。
 
 ## HTTP 服务
 
